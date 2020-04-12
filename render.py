@@ -12,55 +12,37 @@ intensity_multiplier = 2
 image = np.full((height, width, 3), 50, np.uint8)
 
 
-def draw_room(image):
+def draw_room():
+    # no max width or height values (eg. 400->399)
+
     # walls
-    walls = [[(300, 100), (310, 100)],
-             [(310, 100), (310, 175)],
-             [(310, 175), (300, 175)],
-             [(300, 175), (300, 100)],
+    walls_lines = []
+    walls = [[[190, 0], [210, 0], [210, 170], [190, 170]],
+             [[190, 230], [210, 230], [210, 399], [190, 399]]]
 
-             [(50, 125), (200, 125)],
-             [(50, 125), (50, 150)],
-             [(200, 250), (200, 125)],
-             [(200, 250), (150, 150)],
-             [(150, 150), (50, 150)],
+    for i in range(0, len(walls)):
+        cv2.fillPoly(image, pts=[np.array(walls[i])], color=(0, 0, 0))
 
-             [(100, 300), (175, 300)],
-             [(175, 300), (175, 310)],
-             [(175, 310), (100, 310)],
-             [(100, 310), (100, 300)]]
-
-    shape = []
-    shape.append(np.array([[300, 100], [310, 100], [310, 175], [300, 175]]))
-    shape.append(np.array([[200, 125], [50, 125], [50, 150], [150, 150], [200, 250]]))
-    shape.append(np.array([[100, 300], [175, 300], [175, 310], [100, 310]]))
-    for i in range(0, 3):
-        cv2.fillPoly(image, pts=[shape[i]], color=(0, 0, 0))
+        for j in range(0, len(walls[i])):
+            if j != len(walls[i])-1:
+                walls_lines.append([walls[i][j], walls[i][j+1]])
+            else:
+                walls_lines.append([walls[i][j], walls[i][0]])
 
     # lights
-    lights = [[(50, 200), (100, 200)],
-              [(100, 200), (100, 250)],
-              [(100, 250), (50, 250)],
-              [(50, 250), (50, 200)],
+    lights_lines = []
+    lights = [[[250, 70], [260, 70], [260, 320], [250, 320]]]
 
-              [(250, 25), (260, 25)],
-              [(260, 25), (260, 275)],
-              [(260, 275), (250, 275)],
-              [(250, 275), (250, 25)]]
+    for i in range(0, len(lights)):
+        cv2.fillPoly(image, pts=[np.array(lights[i])], color=(255, 255, 255))
 
-    shape = []
-    shape.append(np.array([[50, 200], [100, 200], [100, 250], [50, 250]]))
-    shape.append(np.array([[250, 25], [260, 25], [260, 275], [250, 275]]))
-    for i in range(0, 2):
-        cv2.fillPoly(image, pts=[shape[i]], color=(255, 255, 255))
+        for j in range(0, len(lights[i])):
+            if j != len(lights[i])-1:
+                lights_lines.append([lights[i][j], lights[i][j+1]])
+            else:
+                lights_lines.append([lights[i][j], lights[i][0]])
 
-    for wall in walls:
-        image = cv2.line(image, wall[0], wall[1], (0, 0, 0), 1)
-
-    for light in lights:
-        image = cv2.line(image, light[0], light[1], (255, 255, 255), 1)
-
-    return image, lights, walls
+    return walls_lines, lights_lines
 
 
 def intersection(x1, y1, x2, y2, x3, y3, x4, y4):
@@ -157,7 +139,7 @@ def cast_rays(x, y, image, lights, walls):
     return samples
 
 
-image, lights, walls = draw_room(image)
+walls, lights = draw_room()
 cv2.imshow("Map", image)
 cv2.waitKey(0)
 
