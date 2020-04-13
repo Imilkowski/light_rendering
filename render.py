@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 height = 400
 width = 400
-rays_num = 36
+rays_num = 144
 intensity_multiplier = 2
 
 image = np.full((height, width, 3), 50, np.uint8)
@@ -17,8 +17,9 @@ def draw_room():
 
     # walls
     walls_lines = []
-    walls = [[[190, 0], [210, 0], [210, 170], [190, 170]],
-             [[190, 230], [210, 230], [210, 399], [190, 399]]]
+    walls = [[[160, 110], [190, 110], [190, 140], [160, 140]],
+             [[260, 210], [290, 210], [290, 240], [260, 240]],
+             [[90, 270], [130, 270], [130, 310], [90, 310]]]
 
     for i in range(0, len(walls)):
         cv2.fillPoly(image, pts=[np.array(walls[i])], color=(0, 0, 0))
@@ -31,7 +32,8 @@ def draw_room():
 
     # lights
     lights_lines = []
-    lights = [[[250, 70], [260, 70], [260, 320], [250, 320]]]
+    lights = [[[250, 80], [300, 80], [320, 100], [320, 150], [300, 170], [250, 170], [230, 150], [230, 100]],
+              [[160, 210], [180, 210], [190, 220], [190, 240], [180, 250], [160, 250], [150, 240], [150, 220]]]
 
     for i in range(0, len(lights)):
         cv2.fillPoly(image, pts=[np.array(lights[i])], color=(255, 255, 255))
@@ -46,40 +48,42 @@ def draw_room():
 
 
 def intersection(x1, y1, x2, y2, x3, y3, x4, y4):
-    d = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
-    n = (x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)
+    q1, q2, q3, q4 = (x1 - x2), (y3 - y4), (y1 - y2), (x3 - x4)
+
+    d = q1 * q2 - q3 * q4
 
     if d == 0:
         return None
 
+    q5, q6 = (x1 - x3), (y1 - y3)
+
+    n = q5 * q2 - q6 * q4
+
     t1 = n / d
-    t2 = -((x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3)) / d
+    t2 = -(q1 * q6 - q3 * q5) / d
 
     if 0 < t1 < 1 and t2 > 0:
-        point_x = x1 + t1 * (x2 - x1)
-        point_y = y1 + t1 * (y2 - y1)
-
-        return int(point_x), int(point_y)
+        return int(x1 + t1 * (x2 - x1)), int(y1 + t1 * (y2 - y1))
 
 
-def cast_rays(x, y, image, lights, walls):
+def cast_rays(x, y):
     samples = []
 
     for i in range(0, rays_num):
-        degree = randint(0, 360)
+        def draw_ray():
+            degree = randint(0, 360)
 
-        # ray vector
-        if 0 <= degree < 90:
-            end_pos = (int((x - width) + (2*width*(degree/90))), y - height)
-        elif 90 <= degree < 180:
-            degree -= 90
-            end_pos = (x + width, int((y - height) + (2*height*(degree/90))))
-        elif 180 <= degree < 270:
-            degree -= 180
-            end_pos = (int((x + width) - (2*width*(degree/90))), y + height)
-        else:
-            degree -= 270
-            end_pos = (x - width, int((y + height) - (2*height*(degree/90))))
+            # ray vector
+            if 0 <= degree < 90:
+                return int((x - width) + (2 * width * (degree / 90))), y - height
+            elif 90 <= degree < 180:
+                return x + width, int((y - height) + (2 * height * ((degree - 90) / 90)))
+            elif 180 <= degree < 270:
+                return int((x + width) - (2 * width * ((degree - 180) / 90))), y + height
+            else:
+                return x - width, int((y + height) - (2 * height * ((degree - 270) / 90)))
+
+        end_pos = draw_ray()
 
         # # visualization
         # image = cv2.line(image, (x, y), end_pos, (255, 0, 0), 1)
@@ -92,49 +96,31 @@ def cast_rays(x, y, image, lights, walls):
                 point = intersection(object[0][0], object[0][1], object[1][0], object[1][1], x, y, end_pos[0], end_pos[1])
 
                 if point is not None:
-                    if type == "light":
+                    if type == 0:
                         light_points.append(point)
-                    elif type == "wall":
+                    elif type == 1:
                         wall_points.append(point)
 
         # for now we assume every light is white
-        intersection_point(lights, "light")
-        intersection_point(walls, "wall")
+        intersection_point(lights, 0)
 
-        # # dev stuff
-        # print("Light points: ", light_points)
-        # print("Wall points: ", wall_points)
-
-        def closest_point(light_points, wall_points):
-            points = []
+        def closest_point():
             distances = []
 
             for point in light_points:
-                points.append(point)
+                distances.append(int(np.sqrt(abs(x - point[0]) ** 2 + abs(y - point[1]) ** 2)))
 
             for point in wall_points:
-                points.append(point)
+                distances.append(int(np.sqrt(abs(x - point[0]) ** 2 + abs(y - point[1]) ** 2)))
 
-            if len(points) > 0:
-                for point in points:
-                    a = abs(x - point[0])
-                    b = abs(y - point[1])
-                    distance = int(np.sqrt(a**2 + b**2))
+            # returns "light" only if light was the nearest intersection
+            if np.argmin(distances) <= (len(light_points) - 1) != -1:
+                return 0
 
-                    distances.append(distance)
+        if len(light_points) != 0:
+            intersection_point(walls, 1)
 
-                id = np.argmin(distances)
-
-                # returns "light" only if light was the nearest intersection
-                if id <= (len(light_points)-1) != -1:
-                    return "light"
-                else:
-                    return None
-
-            else:
-                return None
-
-        samples.append(closest_point(light_points, wall_points))
+            samples.append(closest_point())
 
     return samples
 
@@ -151,9 +137,10 @@ print("Rendering... ({})".format(dt.datetime.now().strftime("%H:%M")))
 for y in tqdm(range(height)):
     for x in range(width):
         if np.all(image[y, x] == 50):
-            samples = cast_rays(x, y, image, lights, walls)
+            samples = cast_rays(x, y)
 
-            intensity = (samples.count("light") / rays_num) * intensity_multiplier
+            # how many 0 (lights)
+            intensity = (samples.count(0) / rays_num) * intensity_multiplier
             if intensity > 1:
                 intensity = 1
             value = 255 * intensity
