@@ -1,12 +1,12 @@
 import cv2
 import numpy as np
-from random import randint
+import random
 import datetime as dt
 from tqdm import tqdm
 
-height = 400
-width = 400
-rays_num = 144
+height = 300
+width = 300
+rays_num = 36
 intensity_multiplier = 2
 
 image = np.full((height, width, 3), 50, np.uint8)
@@ -49,21 +49,20 @@ def draw_room():
 
 def intersection(x1, y1, x2, y2, x3, y3, x4, y4):
     q1, q2, q3, q4 = (x1 - x2), (y3 - y4), (y1 - y2), (x3 - x4)
-
     d = q1 * q2 - q3 * q4
 
-    if d == 0:
+    if not d:
         return None
 
     q5, q6 = (x1 - x3), (y1 - y3)
-
-    n = q5 * q2 - q6 * q4
-
-    t1 = n / d
     t2 = -(q1 * q6 - q3 * q5) / d
 
-    if 0 < t1 < 1 and t2 > 0:
-        return int(x1 + t1 * (x2 - x1)), int(y1 + t1 * (y2 - y1))
+    if t2 > 0:
+        n = q5 * q2 - q6 * q4
+        t1 = n / d
+
+        if 0 < t1 < 1:
+            return int(x1 + t1 * (x2 - x1)), int(y1 + t1 * (y2 - y1))
 
 
 def cast_rays(x, y):
@@ -71,7 +70,7 @@ def cast_rays(x, y):
 
     for i in range(0, rays_num):
         def draw_ray():
-            degree = randint(0, 360)
+            degree = random.random()*360
 
             # ray vector
             if 0 <= degree < 90:
@@ -92,13 +91,19 @@ def cast_rays(x, y):
         wall_points = []
 
         def intersection_point(objects, type):
-            for object in objects:
-                point = intersection(object[0][0], object[0][1], object[1][0], object[1][1], x, y, end_pos[0], end_pos[1])
+            if type == 0:
+                for object in objects:
+                    point = intersection(object[0][0], object[0][1], object[1][0], object[1][1], x, y, end_pos[0],
+                                         end_pos[1])
 
-                if point is not None:
-                    if type == 0:
+                    if point:
                         light_points.append(point)
-                    elif type == 1:
+            elif type == 1:
+                for object in objects:
+                    point = intersection(object[0][0], object[0][1], object[1][0], object[1][1], x, y, end_pos[0],
+                                         end_pos[1])
+
+                    if point:
                         wall_points.append(point)
 
         # for now we assume every light is white
@@ -117,10 +122,13 @@ def cast_rays(x, y):
             if np.argmin(distances) <= (len(light_points) - 1) != -1:
                 return 0
 
-        if len(light_points) != 0:
+        if light_points:
             intersection_point(walls, 1)
 
-            samples.append(closest_point())
+            if wall_points:
+                samples.append(closest_point())
+            else:
+                samples.append(0)
 
     return samples
 
@@ -128,9 +136,9 @@ def cast_rays(x, y):
 walls, lights = draw_room()
 cv2.imshow("Map", image)
 cv2.waitKey(0)
+cv2.destroyAllWindows()
 
 # samples = cast_rays(150, 150, image, lights, walls)
-
 
 print("Rendering... ({})".format(dt.datetime.now().strftime("%H:%M")))
 
