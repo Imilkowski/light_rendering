@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import random
 import datetime as dt
+import math
 from tqdm import tqdm
 
 height = 400
@@ -44,7 +45,7 @@ def draw_room():
             else:
                 lights_lines.append([lights[i][j], lights[i][0]])
 
-    return walls_lines, lights_lines
+    return walls_lines, walls, lights_lines, lights
 
 
 def intersection(x1, y1, x2, y2, x3, y3, x4, y4):
@@ -63,6 +64,60 @@ def intersection(x1, y1, x2, y2, x3, y3, x4, y4):
 
         if 0 < t1 < 1:
             return int(x1 + t1 * (x2 - x1)), int(y1 + t1 * (y2 - y1))
+
+
+def define_areas(x, y):
+    def get_relative_angle(v1, v2):
+        uv1 = v1 / np.linalg.norm(v1)
+        uv2 = v2 / np.linalg.norm(v2)
+        dot_product = np.dot(uv1, uv2)
+
+        angle = int(math.degrees(np.arccos(dot_product)))
+
+        return angle
+
+    def get_angle(v1, v2):
+        uv1 = v1 / np.linalg.norm(v1)
+        uv2 = v2 / np.linalg.norm(v2)
+        dot_product = np.dot(uv1, uv2)
+        angle = int(math.degrees(np.arccos(dot_product)))
+
+        if uv2[0] < uv1[0]:
+            angle = -angle
+
+        return angle
+
+    areas = []
+    for object in lights_points:
+        values = []
+        value = 0
+
+        v1 = [object[0][0] - x, object[0][1] - y]
+
+        for point in object:
+            v2 = [point[0] - x, point[1] - y]
+
+            if v1 != v2:
+                angle_1 = get_angle([0, -1], v2)
+                angle_2 = get_angle([0, -1], v1)
+
+                if angle_1 > angle_2:
+                    # left
+                    ang = get_relative_angle(v1, v2)
+                else:
+                    # right
+                    ang = -get_relative_angle(v1, v2)
+                if abs(angle_1 - angle_2) > 180:
+                    # Changing sides
+                    ang = -ang
+                value += ang
+
+            values.append(value)
+
+            v1 = [point[0] - x, point[1] - y]
+
+        print(values)
+    return areas
 
 
 def cast_rays(x, y):
@@ -133,7 +188,7 @@ def cast_rays(x, y):
     return samples
 
 
-walls, lights = draw_room()
+walls, walls_points, lights, lights_points = draw_room()
 cv2.imshow("Map", image)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
@@ -142,28 +197,30 @@ cv2.destroyAllWindows()
 
 print("Rendering... ({})".format(dt.datetime.now().strftime("%H:%M")))
 
-for y in tqdm(range(height)):
-    for x in range(width):
-        if np.all(image[y, x] == 50):
-            samples = cast_rays(x, y)
+areas = define_areas(275, 150)
 
-            # how many 0 (lights)
-            intensity = (samples.count(0) / rays_num) * intensity_multiplier
-            if intensity > 1:
-                intensity = 1
-            value = 255 * intensity
-
-            image[y, x] = (value, value, value)
+# for y in tqdm(range(height)):
+#     for x in range(width):
+#         if np.all(image[y, x] == 50):
+#             samples = cast_rays(x, y)
+#
+#             # how many 0 (lights)
+#             intensity = (samples.count(0) / rays_num) * intensity_multiplier
+#             if intensity > 1:
+#                 intensity = 1
+#             value = 255 * intensity
+#
+#             image[y, x] = (value, value, value)
 
 print("Finished ({})".format(dt.datetime.now().strftime("%H:%M")))
 
 image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 cv2.destroyAllWindows()
 
-now = dt.datetime.now()
-datetime = str(now.strftime("%d-%m %H-%M"))
-filename = "Render {} {} ".format((height, width, rays_num, intensity_multiplier), datetime)
-cv2.imwrite("Renders\\{}.png".format(filename), image)
+# now = dt.datetime.now()
+# datetime = str(now.strftime("%d-%m %H-%M"))
+# filename = "Render {} {} ".format((height, width, rays_num, intensity_multiplier), datetime)
+# cv2.imwrite("Renders\\{}.png".format(filename), image)
 
 cv2.imshow("Rendered", image)
 cv2.waitKey(0)
