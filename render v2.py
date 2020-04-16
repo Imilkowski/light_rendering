@@ -7,8 +7,6 @@ from tqdm import tqdm
 
 height = 400
 width = 400
-rays_num = 360
-intensity_multiplier = 2
 
 image = np.full((height, width, 3), 50, np.uint8)
 
@@ -72,7 +70,12 @@ def define_areas(x, y):
         uv2 = v2 / np.linalg.norm(v2)
         dot_product = np.dot(uv1, uv2)
 
-        angle = int(math.degrees(np.arccos(dot_product)))
+        product = math.degrees(np.arccos(dot_product))
+
+        if math.isnan(product):
+            angle = 0
+        else:
+            angle = int(math.degrees(np.arccos(dot_product)))
 
         return angle
 
@@ -87,9 +90,24 @@ def define_areas(x, y):
 
         return angle
 
+    def generate_degrees(areas):
+        degrees = set([])
+
+        for area in areas:
+            if area[0] > area[1]:
+                for i in range(area[0], 360):
+                    degrees.add(i)
+                for i in range(0, area[1]+1):
+                    degrees.add(i)
+            else:
+                for i in range(area[0], area[1]+1):
+                    degrees.add(i)
+        return degrees
+
     areas = []
     for object in lights_points:
         values = []
+        angles = []
         value = 0
 
         v1 = [object[0][0] - x, object[0][1] - y]
@@ -97,8 +115,8 @@ def define_areas(x, y):
         for point in object:
             v2 = [point[0] - x, point[1] - y]
 
+            angle_1 = get_angle([0, -1], v2)
             if v1 != v2:
-                angle_1 = get_angle([0, -1], v2)
                 angle_2 = get_angle([0, -1], v1)
 
                 if angle_1 > angle_2:
@@ -112,35 +130,42 @@ def define_areas(x, y):
                     ang = -ang
                 value += ang
 
-            values.append(value)
-
             v1 = [point[0] - x, point[1] - y]
 
-        print(values)
-    return areas
+            if angle_1 < 0:
+                angle_1 += 360
+
+            angles.append(angle_1)
+            values.append(value)
+
+        areas.append([angles[np.argmin(values)], angles[np.argmax(values)]])
+
+    degrees = generate_degrees(areas)
+    return degrees
 
 
-def cast_rays(x, y):
+def cast_rays(x, y, degrees):
     samples = []
+    rays = 0
 
-    for i in range(0, rays_num):
-        def draw_ray():
-            degree = random.random()*360
+    for degree in degrees:
+        rays += 1
 
-            # ray vector
-            if 0 <= degree < 90:
-                return int((x - width) + (2 * width * (degree / 90))), y - height
-            elif 90 <= degree < 180:
-                return x + width, int((y - height) + (2 * height * ((degree - 90) / 90)))
-            elif 180 <= degree < 270:
-                return int((x + width) - (2 * width * ((degree - 180) / 90))), y + height
-            else:
-                return x - width, int((y + height) - (2 * height * ((degree - 270) / 90)))
+        def draw_ray(degree):
+            degree -= 90
 
-        end_pos = draw_ray()
+            rad = math.radians(degree)
+
+            length = width*1.5
+
+            pos = int(x + length*math.cos(rad)), int(y + length*math.sin(rad))
+
+            return pos
+
+        end_pos = draw_ray(degree)
 
         # # visualization
-        # image = cv2.line(image, (x, y), end_pos, (255, 0, 0), 1)
+        # img = cv2.line(image, (x, y), end_pos, (255, 0, 0), 1)
 
         light_points = []
         wall_points = []
@@ -184,8 +209,7 @@ def cast_rays(x, y):
                 samples.append(closest_point())
             else:
                 samples.append(0)
-
-    return samples
+    return samples, rays
 
 
 walls, walls_points, lights, lights_points = draw_room()
@@ -193,34 +217,31 @@ cv2.imshow("Map", image)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
 
-# samples = cast_rays(150, 150, image, lights, walls)
-
 print("Rendering... ({})".format(dt.datetime.now().strftime("%H:%M")))
 
-areas = define_areas(275, 150)
+for y in tqdm(range(height)):
+    for x in range(width):
+        if np.all(image[y, x] == 50):
+            degrees = define_areas(x, y)
+            samples, rays = cast_rays(x, y, degrees)
 
-# for y in tqdm(range(height)):
-#     for x in range(width):
-#         if np.all(image[y, x] == 50):
-#             samples = cast_rays(x, y)
-#
-#             # how many 0 (lights)
-#             intensity = (samples.count(0) / rays_num) * intensity_multiplier
-#             if intensity > 1:
-#                 intensity = 1
-#             value = 255 * intensity
-#
-#             image[y, x] = (value, value, value)
+            # how many 0 (lights)
+            intensity = samples.count(0) / 180
+            if intensity > 1:
+                intensity = 1
+            value = 255 * intensity
+
+            image[y, x] = (value, value, value)
 
 print("Finished ({})".format(dt.datetime.now().strftime("%H:%M")))
 
 image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 cv2.destroyAllWindows()
 
-# now = dt.datetime.now()
-# datetime = str(now.strftime("%d-%m %H-%M"))
-# filename = "Render {} {} ".format((height, width, rays_num, intensity_multiplier), datetime)
-# cv2.imwrite("Renders\\{}.png".format(filename), image)
+now = dt.datetime.now()
+datetime = str(now.strftime("%d-%m %H-%M"))
+filename = "Render_v2 {} {} ".format((height, width), datetime)
+cv2.imwrite("Renders\\{}.png".format(filename), image)
 
 cv2.imshow("Rendered", image)
 cv2.waitKey(0)

@@ -1,0 +1,33 @@
+ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    2.312    2.312  511.737  511.737 C:/Users/Xsan6/PycharmProjects/Light rendering/render_experiments.py:241(render)
+   147495   10.225    0.000  267.167    0.002 C:/Users/Xsan6/PycharmProjects/Light rendering/render_experiments.py:164(cast_rays)
+   147495    9.370    0.000  240.012    0.002 C:/Users/Xsan6/PycharmProjects/Light rendering/render_experiments.py:84(define_areas)
+  8506146   72.631    0.000  212.790    0.000 C:/Users/Xsan6/PycharmProjects/Light rendering/render_experiments.py:192(intersection_point)
+  4424850   59.821    0.000  148.878    0.000 C:/Users/Xsan6/PycharmProjects/Light rendering/render_experiments.py:99(get_angle)
+119253188  139.121    0.000  139.121    0.000 C:/Users/Xsan6/PycharmProjects/Light rendering/render_experiments.py:66(intersection)
+ 12979560   54.469    0.000  120.881    0.000 C:\Users\Xsan6\Anaconda3\envs\tf_gpu\lib\site-packages\numpy\linalg\linalg.py:2293(norm)
+  2064930   30.927    0.000   71.886    0.000 C:/Users/Xsan6/PycharmProjects/Light rendering/render_experiments.py:85(get_relative_angle)
+  1132193   19.995    0.000   33.094    0.000 C:/Users/Xsan6/PycharmProjects/Light rendering/render_experiments.py:211(closest_point)
+ 14701733    4.956    0.000   30.928    0.000 C:\Users\Xsan6\Anaconda3\envs\tf_gpu\lib\site-packages\numpy\core\numeric.py:469(asarray)
+ 14701733   25.972    0.000   25.972    0.000 {built-in method numpy.array}
+ 19469340   21.673    0.000   21.673    0.000 {built-in method numpy.dot}
+  1722173    3.558    0.000   16.123    0.000 C:\Users\Xsan6\Anaconda3\envs\tf_gpu\lib\site-packages\numpy\core\fromnumeric.py:54(_wrapfunc)
+  1427183    1.234    0.000   15.036    0.000 C:\Users\Xsan6\Anaconda3\envs\tf_gpu\lib\site-packages\numpy\core\fromnumeric.py:1110(argmin)
+  1722173    3.470    0.000   11.331    0.000 C:\Users\Xsan6\Anaconda3\envs\tf_gpu\lib\site-packages\numpy\core\fromnumeric.py:41(_wrapit)
+ 12979560   10.822    0.000   10.822    0.000 {method 'astype' of 'numpy.ndarray' objects}
+  4294859    7.530    0.000   10.614    0.000 C:/Users/Xsan6/PycharmProjects/Light rendering/render_experiments.py:173(draw_ray)
+ 12979560    7.052    0.000    7.052    0.000 {method 'ravel' of 'numpy.ndarray' objects}
+ 12979560    4.078    0.000    5.607    0.000 C:\Users\Xsan6\Anaconda3\envs\tf_gpu\lib\site-packages\numpy\linalg\linalg.py:121(isComplexType)
+ 25959120    3.756    0.000    3.756    0.000 {built-in method builtins.issubclass}
+   147495    2.057    0.000    2.962    0.000 C:/Users/Xsan6/PycharmProjects/Light rendering/render_experiments.py:110(generate_degrees)
+ 25245530    2.538    0.000    2.538    0.000 {method 'append' of 'list' objects}
+   294990    0.209    0.000    2.529    0.000 C:\Users\Xsan6\Anaconda3\envs\tf_gpu\lib\site-packages\numpy\core\fromnumeric.py:1041(argmax)
+   160000    0.288    0.000    2.083    0.000 C:\Users\Xsan6\Anaconda3\envs\tf_gpu\lib\site-packages\numpy\core\fromnumeric.py:2171(all)
+  1427183    2.017    0.000    2.017    0.000 {method 'argmin' of 'numpy.ndarray' objects}
+  8553914    1.923    0.000    1.923    0.000 {built-in method math.degrees}
+   160000    0.541    0.000    1.795    0.000 C:\Users\Xsan6\Anaconda3\envs\tf_gpu\lib\site-packages\numpy\core\fromnumeric.py:69(_wrapreduction)
+  3444428    1.601    0.000    1.601    0.000 {built-in method builtins.getattr}
+ 11709108    1.233    0.000    1.233    0.000 {built-in method builtins.abs}
+  4294859    1.164    0.000    1.164    0.000 {built-in method math.cos}
+   160000    1.087    0.000    1.087    0.000 {method 'reduce' of 'numpy.ufunc' objects}
+  4294859    1.045    0.000    1.045    0.000 {built-in method math.radians}
