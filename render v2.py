@@ -35,8 +35,13 @@ def draw_room():
     lights = [[[250, 80], [300, 80], [320, 100], [320, 150], [300, 170], [250, 170], [230, 150], [230, 100]],
               [[160, 210], [180, 210], [190, 220], [190, 240], [180, 250], [160, 250], [150, 240], [150, 220]]]
 
+    # colors of lights in order
+    lights_color = [(255, 50, 50), (50, 255, 255)]
+
+    lights_line_num = [0]
     for i in range(0, len(lights)):
-        cv2.fillPoly(image, pts=[np.array(lights[i])], color=(255, 255, 255))
+        cv2.fillPoly(image, pts=[np.array(lights[i])], color=lights_color[i])
+        lights_line_num.append(len(lights[i]) + int(lights_line_num[i]))
 
         for j in range(0, len(lights[i])):
             if j != len(lights[i]) - 1:
@@ -44,7 +49,7 @@ def draw_room():
             else:
                 lights_lines.append([lights[i][j], lights[i][0]])
 
-    return walls_lines, walls, lights_lines, lights
+    return walls_lines, walls, lights_lines, lights, lights_color, lights_line_num
 
 
 def intersection(x1, y1, x2, y2, x3, y3, x4, y4):
@@ -74,9 +79,8 @@ def define_areas(x, y):
         uv2 = [v2[0] / f2, v2[1] / f2]
 
         dot_product = np.dot(uv1, uv2)
-        product = math.degrees(np.arccos(dot_product))
 
-        if math.isnan(product):
+        if dot_product > 1:
             angle = 0
         else:
             angle = int(math.degrees(np.arccos(dot_product)))
@@ -164,6 +168,7 @@ def cast_rays(x, y, degrees):
         if (rays % 2) == 0:
             def draw_ray(degree):
                 degree -= 90
+                degree += random.random() * 2 - 1
 
                 rad = math.radians(degree)
 
@@ -181,14 +186,23 @@ def cast_rays(x, y, degrees):
             light_points = []
             wall_points = []
 
+            light_point_color = []
+
             def intersection_point(objects, type):
                 if type == 0:
+                    i = 0
                     for object in objects:
                         point = intersection(object[0][0], object[0][1], object[1][0], object[1][1], x, y, end_pos[0],
                                              end_pos[1])
 
                         if point:
                             light_points.append(point)
+
+                            for num in range(1, len(lines_num)):
+                                if i < lines_num[num]:
+                                    light_point_color.append(colors[num - 1])
+                                    break
+                        i += 1
                 elif type == 1:
                     for object in objects:
                         point = intersection(object[0][0], object[0][1], object[1][0], object[1][1], x, y, end_pos[0],
@@ -210,23 +224,25 @@ def cast_rays(x, y, degrees):
                     distances.append(int(np.sqrt(abs(x - point[0]) ** 2 + abs(y - point[1]) ** 2)))
 
                 # returns "light" only if light was the nearest intersection
-                if np.argmin(distances) <= (len(light_points) - 1) != -1:
-                    return 0
+                id = np.argmin(distances)
+                if id <= (len(light_points) - 1) != -1:
+                    return light_point_color[id]
+                else:
+                    return (0, 0, 0)
 
             if light_points:
                 intersection_point(walls, 1)
+                samples.append(closest_point())
 
-                if wall_points:
-                    samples.append(closest_point())
-                else:
-                    samples.append(0)
     return samples, rays
 
 
-walls, walls_points, lights, lights_points = draw_room()
+walls, walls_points, lights, lights_points, colors, lines_num = draw_room()
+image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 cv2.imshow("Map", image)
 cv2.waitKey(0)
-cv2.destroyAllWindows()
+
+image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
 print("Rendering... ({})".format(dt.datetime.now().strftime("%H:%M")))
 
@@ -238,13 +254,14 @@ def render():
                 degrees = define_areas(x, y)
                 samples, rays = cast_rays(x, y, degrees)
 
-                # how many 0 (lights)
-                intensity = samples.count(0) / 90 + (random.random() / 20)
+                intensity = (len(samples) / 90) + (random.random() / 20)
                 if intensity > 1:
                     intensity = 1
-                value = 255 * intensity
 
-                image[y, x] = (value, value, value)
+                avg = [sum(y) / len(y) for y in zip(*samples)]
+                avg = [int(i * intensity) for i in avg]
+
+                image[y, x] = avg
 
 
 render()
