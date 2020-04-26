@@ -6,8 +6,9 @@ import math
 from tqdm import tqdm
 import cProfile, pstats, io
 
-height = 400
-width = 400
+# default 400
+width = 800
+height = width
 
 image = np.full((height, width, 3), 50, np.uint8)
 
@@ -15,28 +16,41 @@ image = np.full((height, width, 3), 50, np.uint8)
 def draw_room():
     # no max width or height values (eg. 400->399)
 
+    factor = width/400
+
     # walls
     walls_lines = []
-    walls = [[[160, 110], [190, 110], [190, 140], [160, 140]],
-             [[260, 210], [290, 210], [290, 240], [260, 240]],
-             [[90, 270], [130, 270], [130, 310], [90, 310]]]
+    walls = [[[90, 70], [135, 150], [45, 150]],
+             [[310, 70], [355, 150], [265, 150]],
+             [[200, 270], [245, 350], [155, 350]]]
+
+    for i in walls:
+        for j in i:
+            j[0] = int(j[0] * factor)
+            j[1] = int(j[1] * factor)
 
     for i in range(0, len(walls)):
         cv2.fillPoly(image, pts=[np.array(walls[i])], color=(0, 0, 0))
 
         for j in range(0, len(walls[i])):
-            if j != len(walls[i]) - 1:
-                walls_lines.append([walls[i][j], walls[i][j + 1]])
+            if j != len(walls[i])-1:
+                walls_lines.append([walls[i][j], walls[i][j+1]])
             else:
                 walls_lines.append([walls[i][j], walls[i][0]])
 
     # lights
     lights_lines = []
-    lights = [[[250, 80], [300, 80], [320, 100], [320, 150], [300, 170], [250, 170], [230, 150], [230, 100]],
-              [[160, 210], [180, 210], [190, 220], [190, 240], [180, 250], [160, 250], [150, 240], [150, 220]]]
+    lights = [[[200, 70], [245, 150], [155, 150]],
+              [[255, 170], [300, 250], [210, 250]],
+              [[145, 170], [190, 250], [100, 250]]]
+
+    for i in lights:
+        for j in i:
+            j[0] = int(j[0] * factor)
+            j[1] = int(j[1] * factor)
 
     # colors of lights in order
-    lights_color = [(255, 50, 50), (50, 255, 255)]
+    lights_color = [(255, 50, 50), (50, 255, 50), (50, 50, 255)]
 
     lights_line_num = [0]
     for i in range(0, len(lights)):
@@ -44,8 +58,8 @@ def draw_room():
         lights_line_num.append(len(lights[i]) + int(lights_line_num[i]))
 
         for j in range(0, len(lights[i])):
-            if j != len(lights[i]) - 1:
-                lights_lines.append([lights[i][j], lights[i][j + 1]])
+            if j != len(lights[i])-1:
+                lights_lines.append([lights[i][j], lights[i][j+1]])
             else:
                 lights_lines.append([lights[i][j], lights[i][0]])
 
@@ -72,7 +86,7 @@ def intersection(x1, y1, x2, y2, x3, y3, x4, y4):
 
 def define_areas(x, y):
     def get_relative_angle(v1, v2):
-        f1 = math.sqrt(v1[0] ** 2 + v1[1] ** 2)
+        f1 = math.sqrt(v1[0]**2 + v1[1]**2)
         f2 = math.sqrt(v2[0] ** 2 + v2[1] ** 2)
 
         uv1 = [v1[0] / f1, v1[1] / f1]
@@ -110,10 +124,10 @@ def define_areas(x, y):
             if area[0] > area[1]:
                 for i in range(area[0], 360):
                     degrees.add(i)
-                for i in range(0, area[1] + 1):
+                for i in range(0, area[1]+1):
                     degrees.add(i)
             else:
-                for i in range(area[0], area[1] + 1):
+                for i in range(area[0], area[1]+1):
                     degrees.add(i)
         return degrees
 
@@ -168,13 +182,13 @@ def cast_rays(x, y, degrees):
         if (rays % 2) == 0:
             def draw_ray(degree):
                 degree -= 90
-                degree += random.random() * 2 - 1
+                degree += random.random()*2 - 1
 
                 rad = math.radians(degree)
 
-                length = width * 1.5
+                length = width*1.5
 
-                pos = int(x + length * math.cos(rad)), int(y + length * math.sin(rad))
+                pos = int(x + length*math.cos(rad)), int(y + length*math.sin(rad))
 
                 return pos
 
@@ -200,7 +214,7 @@ def cast_rays(x, y, degrees):
 
                             for num in range(1, len(lines_num)):
                                 if i < lines_num[num]:
-                                    light_point_color.append(colors[num - 1])
+                                    light_point_color.append(colors[num-1])
                                     break
                         i += 1
                 elif type == 1:
@@ -254,7 +268,7 @@ def render():
                 degrees = define_areas(x, y)
                 samples, rays = cast_rays(x, y, degrees)
 
-                intensity = (len(samples) / 90) + (random.random() / 20)
+                intensity = (len(samples)/90) + (random.random()/20)
                 if intensity > 1:
                     intensity = 1
 
